@@ -1,0 +1,14 @@
+---
+info:
+  version: 1.0.0
+  description: Middleware application for OAI 5GCN Orchestration
+
+configuration:
+  nbi:
+    - nbi1:
+      name: magma 
+      grpcRemotePort: 9082
+  sbi:
+    - sbi1:
+      services:
+      - 
