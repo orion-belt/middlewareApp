@@ -1,25 +1,29 @@
 package magmanbi
 
 import (
-	"context"
-	"time"
-    "os"
-    "os/exec"
 	"bytes"
+	"context"
 	"encoding/json"
 	"middlewareApp/logger"
-	"strings"
-	"middlewareApp/magmanbi/orc8r/lib/go/registry"
 	"middlewareApp/magmanbi/orc8r/lib/go/protos"
+	"middlewareApp/magmanbi/orc8r/lib/go/registry"
+	"os"
+	"os/exec"
+	"strings"
+	"time"
 )
 
 type rawMconfigMsg struct {
 	ConfigsByKey map[string]json.RawMessage
 }
+
 const (
-	BASE_URL = "https://127.0.0.1:9443/magma/v1/"
-	ServiceName = "streamer"
-	hardwareID = "c29f9ded-0d34-4e64-9ee5-c66d202081d6"
+	BASE_URL             = "https://127.0.0.1:9443/magma/v1/"
+	ServiceName          = "streamer"
+	SubscriberStreamName = "subscriberdb"
+	ConfigStreamName     = "configs"
+	hardwareID           = "c29f9ded-0d34-4e64-9ee5-c66d202081d6"
+	stream_interval      = 5
 )
 
 func Init() {
@@ -31,7 +35,9 @@ func Init() {
 	RegisterOaiNetwork()
 	GenerateGatewayCerts()
 	time.Sleep((2 * time.Second))
-	StreamUpdates()
+	// Start concurrent stream updates for config, subscriber etc.
+	go StreamConfigUpdates()
+	go StreamSubscriberUpdates()
 }
 
 func RegisterOaiNetwork() {
@@ -88,7 +94,7 @@ func RegisterTier() {
 	jsonData, _ = json.Marshal(GetDefaultTier())
 	// logger.MagmaGwRegLog.Infoln("Tier Config:- ", string(jsonData)	)
 
-	url := BASE_URL + "networks/"+networkID+"/tiers"
+	url := BASE_URL + "networks/" + networkID + "/tiers"
 	status, data, err := SendHttpRequest("POST", url, string(jsonData))
 	if status != 201 {
 		logger.MagmaGwRegLog.Infoln("HTTP request failed, Details- :", status, err)
@@ -101,7 +107,7 @@ func RegisterTier() {
 	}
 }
 
-func RegisterGateway () {
+func RegisterGateway() {
 	gatewayID := "oaigw1"
 	// hardwareID := "c29f9ded-0d34-4e64-9ee5-c66d202081d6"
 	networkID := "oai"
@@ -109,7 +115,7 @@ func RegisterGateway () {
 	var jsonData []byte
 	jsonData, _ = json.Marshal(GetDefaultLteGateway(gatewayID, hardwareID))
 
-	url := BASE_URL + "lte/"+networkID+"/gateways"
+	url := BASE_URL + "lte/" + networkID + "/gateways"
 	status, data, err := SendHttpRequest("POST", url, string(jsonData))
 	if status != 201 {
 		logger.MagmaGwRegLog.Infoln("HTTP request failed, Details- :", status, err)
@@ -131,34 +137,53 @@ func PrettyString(str []byte) (string, error) {
 	return prettyJSON.String(), nil
 }
 
-func GenerateGatewayCerts(){
-	base_path, _:= os.Getwd()
+func GenerateGatewayCerts() {
+	base_path, _ := os.Getwd()
 	_, err := exec.Command(base_path+"/magmanbi/scripts/generate_gateway_certs.sh", hardwareID).Output()
-    if err != nil {
-        logger.MagmaGwRegLog.Panicln(err)
+	if err != nil {
+		logger.MagmaGwRegLog.Panicln(err)
 		return
-    }
-    logger.MagmaGwRegLog.Infoln("Gateway certificates generated sucessfully")
+	}
+	logger.MagmaGwRegLog.Infoln("Gateway certificates generated sucessfully")
 }
 
-func StreamUpdates(){
-       logger.MagmaGwRegLog.Infoln("Stareaming updates from Orcheatrator")
+func StreamConfigUpdates() {
+	logger.MagmaGwRegLog.Infoln("Stareaming updates from Orcheatrator")
 
-		conn, _ := registry.Get().GetCloudConnection(ServiceName)
-		streamerClient := protos.NewStreamerClient(conn)
-		for {
-		stream, _ := streamerClient.GetUpdates(context.Background(), &protos.StreamRequest{GatewayId: "c29f9ded-0d34-4e64-9ee5-c66d202081d6", StreamName: "configs"})
+	conn, _ := registry.Get().GetCloudConnection(ServiceName)
+	streamerClient := protos.NewStreamerClient(conn)
+	for {
+		stream, _ := streamerClient.GetUpdates(context.Background(), &protos.StreamRequest{GatewayId: hardwareID, StreamName: ConfigStreamName})
 		actualMarshaled, _ := stream.Recv()
 		// println(actualMarshaled.String())
-	
+
 		cfg := &protos.GatewayConfigs{}
 		protos.UnmarshalMconfig(actualMarshaled.Updates[0].GetValue(), cfg)
-	
+
 		newCfg := &rawMconfigMsg{ConfigsByKey: map[string]json.RawMessage{}}
 		json.Unmarshal(actualMarshaled.Updates[0].GetValue(), newCfg)
 		data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
-		logger.MagmaGwRegLog.Infoln("\n",data)
-		logger.MagmaGwRegLog.Infoln("Stareaming updates from Orcheatrator [StreamInterval : 5]")
-		time.Sleep((3 * time.Second))
+		logger.MagmaGwRegLog.Infoln("\n", data)
+		logger.MagmaGwRegLog.Infoln("Stareaming config updates from Orcheatrator [StreamInterval : ", stream_interval, "]")
+		time.Sleep((stream_interval * time.Second))
+	}
+}
+
+func StreamSubscriberUpdates() {
+	logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator")
+
+	conn, _ := registry.Get().GetCloudConnection(ServiceName)
+	streamerClient := protos.NewStreamerClient(conn)
+	for {
+		stream, _ := streamerClient.GetUpdates(context.Background(), &protos.StreamRequest{GatewayId: hardwareID, StreamName: SubscriberStreamName, ExtraArgs: nil})
+		actualMarshaled, _ := stream.Recv()
+		num_sub := len(actualMarshaled.Updates)
+		logger.MagmaGwRegLog.Infoln("Number of subscribes", num_sub)
+		for i := 0; i < num_sub; i++ {
+			logger.MagmaGwRegLog.Infoln("Subscriber ", actualMarshaled.Updates[i].Key, " information", (actualMarshaled.Updates[i].String()))
+
+		}
+		logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator [StreamInterval : ", stream_interval+1, "]")
+		time.Sleep(((stream_interval + 1) * time.Second))
 	}
 }
