@@ -4,7 +4,7 @@
 *.dll
 *.so
 *.dylib
-
+middlewareApp*
 # Test binary, built with `go test -c`
 *.test
 
