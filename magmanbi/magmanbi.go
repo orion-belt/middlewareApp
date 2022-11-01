@@ -1,26 +1,31 @@
 package magmanbi
 
 import (
-	"context"
-	"time"
-    "os"
-    "os/exec"
 	"bytes"
+	"context"
 	"encoding/json"
 	"middlewareApp/logger"
-	"strings"
-	"middlewareApp/magmanbi/orc8r/lib/go/registry"
 	"middlewareApp/magmanbi/orc8r/lib/go/protos"
+	"middlewareApp/magmanbi/orc8r/lib/go/registry"
+	"os"
+	"os/exec"
+	"strings"
+	//"time"
 )
 
 type rawMconfigMsg struct {
 	ConfigsByKey map[string]json.RawMessage
 }
+
 const (
-	BASE_URL = "https://127.0.0.1:9443/magma/v1/"
+	BASE_URL    = "https://127.0.0.1:9443/magma/v1/"
 	ServiceName = "streamer"
-	hardwareID = "c29f9ded-0d34-4e64-9ee5-c66d202081d6"
+	hardwareID  = "c29f9ded-0d34-4e64-9ee5-c66d202081d6"
 )
+
+var SST = ""
+var SD = ""
+var UPDATEDSSTSD = false
 
 func Init() {
 	// Start GRPC server for Streamer service of Magma Orchestreator
@@ -30,8 +35,9 @@ func Init() {
 	logger.MagmaGwRegLog.Infoln("Get registered networks at Orchestrator")
 	RegisterOaiNetwork()
 	GenerateGatewayCerts()
-	time.Sleep((2 * time.Second))
-	StreamUpdates()
+	//GetPlmn ()
+	//time.Sleep((2 * time.Second))
+	//StreamUpdates()
 }
 
 func RegisterOaiNetwork() {
@@ -53,6 +59,22 @@ func RegisterOaiNetwork() {
 			RegisterTier()
 			RegisterGateway()
 		}
+	}
+}
+
+func GetPlmn() {
+	gatewayID := "oaigw1"
+	networkID := "oai"
+
+	url := BASE_URL + "lte/" + networkID + "/gateways/" + gatewayID + "/cellular/ngc"
+	status, data, _ := SendHttpRequest("GET", url, "")
+	if status != 200 {
+		logger.MagmaGwRegLog.Infoln("HTTP request failed with code:", status)
+		logger.MagmaGwRegLog.Infoln("HTTP response body :", data)
+		return
+	} else {
+		data, _ = PrettyString([]byte(data))
+		logger.MagmaGwRegLog.Infoln("Plmn ngc details: \n", data)
 	}
 }
 
@@ -88,7 +110,7 @@ func RegisterTier() {
 	jsonData, _ = json.Marshal(GetDefaultTier())
 	// logger.MagmaGwRegLog.Infoln("Tier Config:- ", string(jsonData)	)
 
-	url := BASE_URL + "networks/"+networkID+"/tiers"
+	url := BASE_URL + "networks/" + networkID + "/tiers"
 	status, data, err := SendHttpRequest("POST", url, string(jsonData))
 	if status != 201 {
 		logger.MagmaGwRegLog.Infoln("HTTP request failed, Details- :", status, err)
@@ -101,7 +123,7 @@ func RegisterTier() {
 	}
 }
 
-func RegisterGateway () {
+func RegisterGateway() {
 	gatewayID := "oaigw1"
 	// hardwareID := "c29f9ded-0d34-4e64-9ee5-c66d202081d6"
 	networkID := "oai"
@@ -109,7 +131,7 @@ func RegisterGateway () {
 	var jsonData []byte
 	jsonData, _ = json.Marshal(GetDefaultLteGateway(gatewayID, hardwareID))
 
-	url := BASE_URL + "lte/"+networkID+"/gateways"
+	url := BASE_URL + "lte/" + networkID + "/gateways"
 	status, data, err := SendHttpRequest("POST", url, string(jsonData))
 	if status != 201 {
 		logger.MagmaGwRegLog.Infoln("HTTP request failed, Details- :", status, err)
@@ -131,34 +153,66 @@ func PrettyString(str []byte) (string, error) {
 	return prettyJSON.String(), nil
 }
 
-func GenerateGatewayCerts(){
-	base_path, _:= os.Getwd()
+func GenerateGatewayCerts() {
+	base_path, _ := os.Getwd()
 	_, err := exec.Command(base_path+"/magmanbi/scripts/generate_gateway_certs.sh", hardwareID).Output()
-    if err != nil {
-        logger.MagmaGwRegLog.Panicln(err)
+	if err != nil {
+		logger.MagmaGwRegLog.Panicln(err)
 		return
-    }
-    logger.MagmaGwRegLog.Infoln("Gateway certificates generated sucessfully")
+	}
+	logger.MagmaGwRegLog.Infoln("Gateway certificates generated sucessfully")
 }
 
-func StreamUpdates(){
-       logger.MagmaGwRegLog.Infoln("Stareaming updates from Orcheatrator")
-
-		conn, _ := registry.Get().GetCloudConnection(ServiceName)
-		streamerClient := protos.NewStreamerClient(conn)
-		for {
-		stream, _ := streamerClient.GetUpdates(context.Background(), &protos.StreamRequest{GatewayId: "c29f9ded-0d34-4e64-9ee5-c66d202081d6", StreamName: "configs"})
-		actualMarshaled, _ := stream.Recv()
-		// println(actualMarshaled.String())
-	
-		cfg := &protos.GatewayConfigs{}
-		protos.UnmarshalMconfig(actualMarshaled.Updates[0].GetValue(), cfg)
-	
-		newCfg := &rawMconfigMsg{ConfigsByKey: map[string]json.RawMessage{}}
-		json.Unmarshal(actualMarshaled.Updates[0].GetValue(), newCfg)
-		data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
-		logger.MagmaGwRegLog.Infoln("\n",data)
-		logger.MagmaGwRegLog.Infoln("Stareaming updates from Orcheatrator [StreamInterval : 5]")
-		time.Sleep((3 * time.Second))
+func Find(a []string, x string) (int, bool) {
+	for i, n := range a {
+		if strings.Contains(n, x) {
+			return i, true
+		}
 	}
+	return len(a), false
+}
+
+func StreamUpdates() {
+	logger.MagmaGwRegLog.Infoln("Streaming updates from Orcheatrator")
+
+	conn, _ := registry.Get().GetCloudConnection(ServiceName)
+	streamerClient := protos.NewStreamerClient(conn)
+
+	stream, _ := streamerClient.GetUpdates(context.Background(), &protos.StreamRequest{GatewayId: "c29f9ded-0d34-4e64-9ee5-c66d202081d6", StreamName: "configs"})
+	actualMarshaled, _ := stream.Recv()
+	// println(actualMarshaled.String())
+
+	cfg := &protos.GatewayConfigs{}
+	protos.UnmarshalMconfig(actualMarshaled.Updates[0].GetValue(), cfg)
+
+	newCfg := &rawMconfigMsg{ConfigsByKey: map[string]json.RawMessage{}}
+	json.Unmarshal(actualMarshaled.Updates[0].GetValue(), newCfg)
+	data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
+	logger.MagmaGwRegLog.Infoln("\n", data)
+
+	newdata := []string(strings.Split(data, ","))
+
+	sstPosition, foundsst := Find(newdata, "amfDefaultSliceServiceType")
+	sdPosition, foundsd := Find(newdata, "amfDefaultSliceDifferentiator")
+	if foundsst && foundsd {
+		amfDefaultSliceServiceType := []string(strings.Split(newdata[sstPosition], ": "))
+		//amfDefaultSliceDifferentiator := []string(strings.Split(newdata[sdPosition], ": "))
+		amfDefaultSliceDifferentiator := []string(strings.Split([]string(strings.Split(newdata[sdPosition], ": "))[1], "\""))
+
+		if (!strings.EqualFold(SST, amfDefaultSliceServiceType[1])) || (!strings.EqualFold(SD, amfDefaultSliceDifferentiator[1])) {
+			SST = amfDefaultSliceServiceType[1]
+			SD = amfDefaultSliceDifferentiator[1]
+			UPDATEDSSTSD = true
+		} else {
+			UPDATEDSSTSD = false
+		}
+
+		if UPDATEDSSTSD {
+			logger.MagmaGwRegLog.Infoln("PLMN values have been updated \n")
+			logger.MagmaGwRegLog.Infoln("New SST value:", SST)
+			logger.MagmaGwRegLog.Infoln("New SD value:", SD)
+		}
+	}
+
+	logger.MagmaGwRegLog.Infoln("Streaming updates from Orcheatrator [StreamInterval : 5]")
 }
