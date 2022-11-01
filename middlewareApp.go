@@ -1,11 +1,12 @@
 package main
 
 import (
+	"github.com/urfave/cli"
 	"middlewareApp/logger"
 	"middlewareApp/magmanbi"
+	"middlewareApp/magmasbi"
 	"os"
-
-	"github.com/urfave/cli"
+	"time"
 )
 
 func main() {
@@ -41,6 +42,13 @@ func AppInit(c *cli.Context) error {
 	}
 
 	go magmanbi.Init()
+	for {
+		time.Sleep((5 * time.Second))
+		// Start concurrent stream updates for config, subscriber etc.
+		go magmanbi.StreamConfigUpdates()
+		go magmanbi.StreamSubscriberUpdates()
+		go magmasbi.UpdateAmfPlmn()
+	}
 	select {} // block forever
 	// return nil
 }

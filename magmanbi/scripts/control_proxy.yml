@@ -15,7 +15,7 @@
 nghttpx_config_location: /var/tmp/nghttpx.conf
 
 # Location for certs
-rootca_cert: /home/rohan/stream/certs/rootCA.pem
+#rootca_cert: /home/rohan/stream/certs/rootCA.pem
 gateway_cert: magmanbi/.certs/gateway.crt
 gateway_key: magmanbi/.certs/gateway.key
 

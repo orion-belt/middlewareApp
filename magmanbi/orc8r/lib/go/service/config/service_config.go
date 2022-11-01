@@ -31,7 +31,7 @@ var (
 	// configDir is where the per-service configuration files are stored
 	configDir         = base_path+"/magmanbi/scripts/"
 	// configDir         = "/home/rohan/stream/configs"
-	oldConfigDir      = "/home/rohan/stream/"
+	oldConfigDir      = base_path+"/home/stream/"
 	configOverrideDir = "/var/opt/magma/configs"
 	cfgDirMu          sync.RWMutex
 )

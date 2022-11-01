@@ -23,7 +23,7 @@
 
 set -e
 hwid=${1}
-# hwid=$(uuidgen)
+#hwid=$(uuidgen)
 # hwid="c29f9ded-0d34-4e64-9ee5-c66d202081d6"
 echo "Hardware ID :- "$hwid
 CERT_DIR=$PWD/magmanbi/.certs
