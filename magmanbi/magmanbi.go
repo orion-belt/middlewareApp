@@ -155,7 +155,6 @@ func RegisterGateway() {
 
 func StreamConfigUpdates() {
 	logger.MagmaGwRegLog.Infoln("Stareaming updates from Orcheatrator")
-	// conn, _ := registry.Get().GetCloudConnection(ServiceName)
 
 	conn, _ := GetCloudConnection(nbi_stream_authority, nbi_stream_url)
 	streamerClient := protos.NewStreamerClient(conn)
@@ -179,7 +178,6 @@ func StreamConfigUpdates() {
 func StreamSubscriberUpdates() {
 	logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator")
 
-	// conn, _ := registry.Get().GetCloudConnection(ServiceName)
 	conn, _ := GetCloudConnection(nbi_stream_authority, nbi_stream_url)
 
 	streamerClient := protos.NewStreamerClient(conn)
