@@ -3,8 +3,8 @@ package main
 import (
 	"middlewareApp/logger"
 	"middlewareApp/magmanbi"
+	"middlewareApp/config"
 	"os"
-
 	"github.com/urfave/cli"
 )
 
@@ -34,12 +34,22 @@ func main() {
 
 func AppInit(c *cli.Context) error {
 
-	cfg := c.String("cfg")
+	// Load configuration
+	cfg := c.String("config")
 	if cfg == "" {
-		logger.AppLog.Warnln("No configuration file provided. Using default configuration file:")
+		base_path,_ := os.Getwd()
+		configPath := base_path+config.CONFIG_PATH 
+		logger.AppLog.Warnln("No configuration file provided. Using default configuration file:",configPath)
 		logger.AppLog.Infoln("Application Usage:", c.App.Usage)
+		cfg = base_path+config.CONFIG_PATH 
+	} 
+
+	if err := config.LoadConfig(cfg); err != nil {
+		logger.AppLog.Errorln("Failed to load config:", err)
+		return err
 	}
 
+	// Initialise middleware services
 	go magmanbi.Init()
 	select {} // block forever
 	// return nil
