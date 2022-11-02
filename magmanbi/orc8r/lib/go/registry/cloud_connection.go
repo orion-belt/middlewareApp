@@ -107,7 +107,9 @@ func (r *ServiceRegistry) GetCloudConnectionFromServiceConfig(
 	} else {
 		addr, err = getCloudServiceAddress(controlProxyConfig)
 	}
-
+	println(authority)
+	println(addr)
+	
 	if err != nil {
 		return nil, err
 	}

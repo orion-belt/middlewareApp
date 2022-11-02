@@ -4,29 +4,30 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"middlewareApp/logger"
 	"middlewareApp/config"
+	"middlewareApp/logger"
 	"middlewareApp/magmanbi/orc8r/lib/go/protos"
-	"middlewareApp/magmanbi/orc8r/lib/go/registry"
+	// "middlewareApp/magmanbi/orc8r/lib/go/registry"
 	"os"
 	"os/exec"
 	"strings"
 	"time"
 )
-// var config = config.MwConfig
+
 type rawMconfigMsg struct {
 	ConfigsByKey map[string]json.RawMessage
 }
 
 const (
-	NBI_SERVICE			 = "magma"
+	NBI_SERVICE          = "magma"
 	ServiceName          = "streamer"
 	SubscriberStreamName = "subscriberdb"
 	ConfigStreamName     = "configs"
 )
 
-var NBI_BASE_URL string
-var NBI_STREAM_URL string
+var nbi_base_url string
+var nbi_stream_url string
+var nbi_stream_authority string
 var networkID string
 var gatewayID string
 var hardwareID string
@@ -34,8 +35,9 @@ var stream_interval time.Duration
 
 func Init() {
 	// Initialze global variables
-	NBI_BASE_URL = config.GetCloudHttpUrl(NBI_SERVICE)
-	NBI_STREAM_URL = config.GetCloudGrpcUrl(NBI_SERVICE)
+	nbi_base_url = config.GetCloudHttpUrl(NBI_SERVICE)
+	nbi_stream_url = config.GetCloudGrpcUrl(NBI_SERVICE)
+	nbi_stream_authority = config.GetCloudAuthority(NBI_SERVICE, ServiceName)
 	networkID = config.GetCloudNetworkId(NBI_SERVICE)
 	gatewayID = config.GetCloudGatewayId(NBI_SERVICE)
 	stream_interval = config.GetCloudStreamInterval(NBI_SERVICE)
@@ -53,7 +55,7 @@ func Init() {
 }
 
 func RegisterOaiNetwork() bool {
-	url := NBI_BASE_URL + "networks"
+	url := nbi_base_url + "networks"
 
 	status, data, _ := SendHttpRequest("GET", url, "")
 	if status != 200 {
@@ -76,7 +78,6 @@ func RegisterOaiNetwork() bool {
 	return true
 }
 
-
 func RegisterNetwork() {
 	logger.MagmaGwRegLog.Infoln("Registering OAI network")
 	// Create test network
@@ -86,14 +87,14 @@ func RegisterNetwork() {
 
 	logger.MagmaGwRegLog.Infoln("Network Config:- \n", data)
 
-	url := NBI_BASE_URL + "lte"
+	url := nbi_base_url + "lte"
 	status, data, err := SendHttpRequest("POST", url, string(jsonData))
 	if status != 201 {
 		logger.MagmaGwRegLog.Infoln("HTTP request failed, Details- :", status, err)
 		logger.MagmaGwRegLog.Infoln("HTTP response body :", data)
 		return
 	} else {
-		url := NBI_BASE_URL + "networks"
+		url := nbi_base_url + "networks"
 		_, data, _ := SendHttpRequest("GET", url, "")
 		logger.MagmaGwRegLog.Infoln("Registered networks at Orchestrator: ", data)
 		logger.MagmaGwRegLog.Infoln("OAI network registered successfully")
@@ -106,7 +107,7 @@ func RegisterTier() {
 	var jsonData []byte
 	jsonData, _ = json.Marshal(GetDefaultTier())
 
-	url := NBI_BASE_URL + "networks/" + networkID + "/tiers"
+	url := nbi_base_url + "networks/" + networkID + "/tiers"
 	status, data, err := SendHttpRequest("POST", url, string(jsonData))
 	if status != 201 {
 		logger.MagmaGwRegLog.Infoln("HTTP request failed, Details- :", status, err)
@@ -118,8 +119,8 @@ func RegisterTier() {
 		logger.MagmaGwRegLog.Infoln("OAI tier created successfully")
 	}
 }
-func RegisterOaiGateway () {
-	url := NBI_BASE_URL + "networks/" + networkID + "/gateways"
+func RegisterOaiGateway() {
+	url := nbi_base_url + "networks/" + networkID + "/gateways"
 	status, data, _ := SendHttpRequest("GET", url, "")
 	if status != 200 {
 		logger.MagmaGwRegLog.Errorln("HTTP request failed with code :", status)
@@ -138,7 +139,7 @@ func RegisterGateway() {
 	var jsonData []byte
 	jsonData, _ = json.Marshal(GetDefaultLteGateway(gatewayID, hardwareID))
 
-	url := NBI_BASE_URL + "lte/" + networkID + "/gateways"
+	url := nbi_base_url + "lte/" + networkID + "/gateways"
 	status, data, err := SendHttpRequest("POST", url, string(jsonData))
 	if status != 201 {
 		logger.MagmaGwRegLog.Infoln("HTTP request failed, Details- :", status, err)
@@ -154,8 +155,9 @@ func RegisterGateway() {
 
 func StreamConfigUpdates() {
 	logger.MagmaGwRegLog.Infoln("Stareaming updates from Orcheatrator")
+	// conn, _ := registry.Get().GetCloudConnection(ServiceName)
 
-	conn, _ := registry.Get().GetCloudConnection(ServiceName)
+	conn, _ := GetCloudConnection(nbi_stream_authority, nbi_stream_url)
 	streamerClient := protos.NewStreamerClient(conn)
 	for {
 		stream, _ := streamerClient.GetUpdates(context.Background(), &protos.StreamRequest{GatewayId: hardwareID, StreamName: ConfigStreamName})
@@ -169,7 +171,7 @@ func StreamConfigUpdates() {
 		json.Unmarshal(actualMarshaled.Updates[0].GetValue(), newCfg)
 		data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
 		logger.MagmaGwRegLog.Infoln("\n", data)
-		logger.MagmaGwRegLog.Infoln("Stareaming config updates from Orcheatrator [StreamInterval : ", stream_interval * time.Second, "]")
+		logger.MagmaGwRegLog.Infoln("Stareaming config updates from Orcheatrator [StreamInterval : ", stream_interval*time.Second, "]")
 		time.Sleep((stream_interval * time.Second))
 	}
 }
@@ -177,7 +179,9 @@ func StreamConfigUpdates() {
 func StreamSubscriberUpdates() {
 	logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator")
 
-	conn, _ := registry.Get().GetCloudConnection(ServiceName, )
+	// conn, _ := registry.Get().GetCloudConnection(ServiceName)
+	conn, _ := GetCloudConnection(nbi_stream_authority, nbi_stream_url)
+
 	streamerClient := protos.NewStreamerClient(conn)
 	for {
 		stream, _ := streamerClient.GetUpdates(context.Background(), &protos.StreamRequest{GatewayId: hardwareID, StreamName: SubscriberStreamName, ExtraArgs: nil})
@@ -188,7 +192,7 @@ func StreamSubscriberUpdates() {
 			logger.MagmaGwRegLog.Infoln("Subscriber ", actualMarshaled.Updates[i].Key, " information", (actualMarshaled.Updates[i].String()))
 
 		}
-		logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator [StreamInterval : ", (stream_interval+1)* time.Second, "]")
+		logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator [StreamInterval : ", (stream_interval+1)*time.Second, "]")
 		time.Sleep(((stream_interval + 1) * time.Second))
 	}
 }
