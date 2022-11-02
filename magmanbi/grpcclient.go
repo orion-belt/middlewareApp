@@ -52,9 +52,6 @@ var (
 )
 
 func GetCloudConnection(authority string, addr string) (*grpc.ClientConn, error) {
-
-	println(authority)
-	println(addr)
 	ctx, cancel := context.WithTimeout(context.Background(), grpcMaxTimeoutSec*time.Second)
 	defer cancel()
 

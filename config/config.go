@@ -73,6 +73,15 @@ func GetCloudHttpUrl(service string) string {
 	return ""
 }
 
+func IsRegisterGateway(service string)bool{
+	for _, nbi_tmp := range MwConfig.Configuration.Nbis {
+		if nbi_tmp.Name == service {
+			return nbi_tmp.RegisterGateway
+		}
+	}
+	return false
+}
+
 func GetCloudNetworkId(service string) string {
 	for _, nbi_tmp := range MwConfig.Configuration.Nbis {
 		if nbi_tmp.Name == service {
@@ -103,11 +112,8 @@ func GetHardwareId(service string) string {
 	for _, nbi_tmp := range MwConfig.Configuration.Nbis {
 		if nbi_tmp.Name == service {
 			if !nbi_tmp.GeneratehwId {
-				println("NotGenerating HardwareId")
-
 				return nbi_tmp.HardwareId
 			} else {
-				println("Generating HardwareId")
 				return GetUUID()
 			}
 		}
@@ -117,7 +123,6 @@ func GetHardwareId(service string) string {
 
 func GetUUID() string {
 	id := uuid.New()
-	println(id.String())
 	return id.String()
 }
 
