@@ -5,9 +5,15 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"middlewareApp/logger"
+	"os"
 	"strconv"
 	"time"
 )
+
+// Map represents a map generated from a service YML file.
+type Map struct {
+	RawMap map[interface{}]interface{}
+}
 
 const (
 	CONFIG_PATH = "/config/config.yaml"
@@ -39,7 +45,18 @@ func LoadConfig(f string) error {
 func GetCloudGrpcUrl(service string) string {
 	for _, nbi_tmp := range MwConfig.Configuration.Nbis {
 		if nbi_tmp.Name == service {
-			BASE_URL := "https://" + nbi_tmp.CloudAddress + ":" + strconv.Itoa(nbi_tmp.CloudStreamerPort) + "/magma/v1/"
+			BASE_URL := nbi_tmp.CloudAddress + ":" + strconv.Itoa(nbi_tmp.CloudStreamerPort)
+			return BASE_URL
+		}
+	}
+	return ""
+}
+
+
+func GetCloudAuthority(service string, servicename string) string {
+	for _, nbi_tmp := range MwConfig.Configuration.Nbis {
+		if nbi_tmp.Name == service {
+			BASE_URL := servicename+"-"+nbi_tmp.CloudAddress
 			return BASE_URL
 		}
 	}
@@ -102,4 +119,11 @@ func GetUUID() string {
 	id := uuid.New()
 	println(id.String())
 	return id.String()
+}
+
+func GetGatewayCerds() (string, string) {
+	base_path, _ := os.Getwd()
+	clientCaFile := base_path + "/magmanbi/.certs/gateway.crt"
+	clientKeyFile := base_path + "/magmanbi/.certs/gateway.key"
+	return clientCaFile, clientKeyFile
 }
