@@ -7,7 +7,6 @@ import (
 	"middlewareApp/config"
 	"middlewareApp/logger"
 	"middlewareApp/magmanbi/orc8r/lib/go/protos"
-	// "middlewareApp/magmanbi/orc8r/lib/go/registry"
 	"os"
 	"os/exec"
 	"strings"
@@ -19,7 +18,7 @@ type rawMconfigMsg struct {
 }
 
 const (
-	NBI_SERVICE          = "magma"
+	nbi_service          = "magma"
 	ServiceName          = "streamer"
 	SubscriberStreamName = "subscriberdb"
 	ConfigStreamName     = "configs"
@@ -35,19 +34,19 @@ var stream_interval time.Duration
 
 func Init() {
 	// Initialze global variables
-	nbi_base_url = config.GetCloudHttpUrl(NBI_SERVICE)
-	nbi_stream_url = config.GetCloudGrpcUrl(NBI_SERVICE)
-	nbi_stream_authority = config.GetCloudAuthority(NBI_SERVICE, ServiceName)
-	networkID = config.GetCloudNetworkId(NBI_SERVICE)
-	gatewayID = config.GetCloudGatewayId(NBI_SERVICE)
-	stream_interval = config.GetCloudStreamInterval(NBI_SERVICE)
-	hardwareID = config.GetHardwareId(NBI_SERVICE)
+	nbi_base_url = config.GetCloudHttpUrl(nbi_service)
+	nbi_stream_url = config.GetCloudGrpcUrl(nbi_service)
+	nbi_stream_authority = config.GetCloudAuthority(nbi_service, ServiceName)
+	networkID = config.GetCloudNetworkId(nbi_service)
+	gatewayID = config.GetCloudGatewayId(nbi_service)
+	stream_interval = config.GetCloudStreamInterval(nbi_service)
+	hardwareID = config.GetHardwareId(nbi_service)
 
 	// Register OAI Gateway (5GCN) to Magma Orchestreator
 	logger.MagmaGwRegLog.Infoln("Get registered networks at Orchestrator")
 	if RegisterOaiNetwork() {
-		GenerateGatewayCerts()
 		time.Sleep((2 * time.Second))
+		GenerateGatewayCerts()
 		// Start concurrent stream updates for config, subscriber etc.
 		go StreamConfigUpdates()
 		go StreamSubscriberUpdates()
@@ -55,6 +54,11 @@ func Init() {
 }
 
 func RegisterOaiNetwork() bool {
+	if !config.IsRegisterGateway(nbi_service){
+		logger.MagmaGwRegLog.Infoln("Gateway registration disabled")
+		return true
+	}
+		
 	url := nbi_base_url + "networks"
 
 	status, data, _ := SendHttpRequest("GET", url, "")
