@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/urfave/cli"
+	"middlewareApp/config"
 	"middlewareApp/logger"
 	"middlewareApp/magmanbi"
 	"middlewareApp/oaisbi"
 	"os"
 	"time"
-	"middlewareApp/config"
+
+	"github.com/urfave/cli"
 )
 
 var UpdateAllSlice_Lists = true
@@ -43,12 +44,12 @@ func AppInit(c *cli.Context) error {
 	// Load configuration
 	cfg := c.String("config")
 	if cfg == "" {
-		base_path,_ := os.Getwd()
-		configPath := base_path+config.CONFIG_PATH 
-		logger.AppLog.Warnln("No configuration file provided. Using default configuration file:",configPath)
+		base_path, _ := os.Getwd()
+		configPath := base_path + config.CONFIG_PATH
+		logger.AppLog.Warnln("No configuration file provided. Using default configuration file:", configPath)
 		logger.AppLog.Infoln("Application Usage:", c.App.Usage)
-		cfg = base_path+config.CONFIG_PATH 
-	} 
+		cfg = base_path + config.CONFIG_PATH
+	}
 
 	if err := config.LoadConfig(cfg); err != nil {
 		logger.AppLog.Errorln("Failed to load config:", err)
@@ -56,18 +57,33 @@ func AppInit(c *cli.Context) error {
 	}
 	// Initialise middleware services
 	go magmanbi.Init()
-	for {
-		logger.AppLog.Infoln("\n\n")
-		time.Sleep((5 * time.Second))
-		go magmanbi.StreamConfigUpdates()
-		go magmanbi.StreamSubscriberUpdates()
-		if UpdateAllSlice_Lists {
-			go oaisbi.UpdateAmfPlmnForAllElements()
-		}else{
-			go oaisbi.UpdateAmfPlmnForSpecificElement(PlmnPos, SlicePos)
+	if magmanbi.RegisterOaiNetwork() {
+		time.Sleep((2 * time.Second))
+		for {
+			if magmanbi.IsNetworkReady(magmanbi.NetworkID) {
+				for {
+					if magmanbi.IsGatewayReady(magmanbi.GatewayID) {
+						// Start concurrent stream updates for config, subscriber etc.
+						logger.MagmaGwRegLog.Infoln("Generate gateway certs")
+						if magmanbi.GenerateGatewayCerts() {
+							logger.AppLog.Infoln("\n\n")
+							time.Sleep((5 * time.Second))
+							go magmanbi.StreamConfigUpdates()
+							go magmanbi.StreamSubscriberUpdates()
+							if UpdateAllSlice_Lists {
+								go oaisbi.UpdateAmfPlmnForAllElements()
+							} else {
+								go oaisbi.UpdateAmfPlmnForSpecificElement(PlmnPos, SlicePos)
+							}
+							go oaisbi.GetPlmn()
+							select {} // Run these threads only
+						}
+					}
+					time.Sleep((2 * time.Second))
+				}
+			}
+			time.Sleep((2 * time.Second))
 		}
-		go oaisbi.GetPlmn()
 	}
-	select {} // block forever
-	// return nil
+	return nil
 }
