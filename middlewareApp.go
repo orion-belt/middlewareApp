@@ -48,7 +48,6 @@ func AppInit(c *cli.Context) error {
 	go magmanbi.Init()
 	for {
 		logger.AppLog.Infoln("\n\n")
-		logger.AppLog.Infoln("=====================================================================")
 		time.Sleep((5 * time.Second))
 		go magmanbi.StreamUpdates()
 		if UpdateAllSlice_Lists {
@@ -58,8 +57,6 @@ func AppInit(c *cli.Context) error {
 		}
 		//go oaisbi.UpdateSlice()
 		go oaisbi.GetPlmn()
-		logger.AppLog.Infoln("=====================================================================")
-		logger.AppLog.Infoln("\n\n")
 	}
 	select {} // block forever
 	// return nil
