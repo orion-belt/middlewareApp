@@ -44,7 +44,6 @@ func AppInit(c *cli.Context) error {
 		logger.AppLog.Warnln("No configuration file provided. Using default configuration file:")
 		logger.AppLog.Infoln("Application Usage:", c.App.Usage)
 	}
-
 	go magmanbi.Init()
 	for {
 		logger.AppLog.Infoln("\n\n")
@@ -55,7 +54,6 @@ func AppInit(c *cli.Context) error {
 		}else{
 			go oaisbi.UpdateAmfPlmnForSpecificElement(PlmnPos, SlicePos)
 		}
-		//go oaisbi.UpdateSlice()
 		go oaisbi.GetPlmn()
 	}
 	select {} // block forever
