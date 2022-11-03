@@ -4,11 +4,15 @@ import (
 	"github.com/urfave/cli"
 	"middlewareApp/logger"
 	"middlewareApp/magmanbi"
-	"middlewareApp/magmasbi"
+	"middlewareApp/oaisbi"
 	"os"
 	"time"
 )
 
+
+var UpdateAllSlice_Lists = true
+var PlmnPos = 0
+var SlicePos = 1
 func main() {
 	app := cli.NewApp()
 	app.Name = "Openairinterface middlewareApp"
@@ -43,9 +47,19 @@ func AppInit(c *cli.Context) error {
 
 	go magmanbi.Init()
 	for {
+		logger.AppLog.Infoln("\n\n")
+		logger.AppLog.Infoln("=====================================================================")
 		time.Sleep((5 * time.Second))
 		go magmanbi.StreamUpdates()
-		go magmasbi.UpdateAmfPlmn()
+		if UpdateAllSlice_Lists {
+			go oaisbi.UpdateAmfPlmnForAllElements()
+		}else{
+			go oaisbi.UpdateAmfPlmnForSpecificElement(PlmnPos, SlicePos)
+		}
+		//go oaisbi.UpdateSlice()
+		go oaisbi.GetPlmn()
+		logger.AppLog.Infoln("=====================================================================")
+		logger.AppLog.Infoln("\n\n")
 	}
 	select {} // block forever
 	// return nil

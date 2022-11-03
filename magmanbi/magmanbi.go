@@ -8,6 +8,7 @@ import (
 	"middlewareApp/magmanbi/orc8r/lib/go/protos"
 	"middlewareApp/magmanbi/orc8r/lib/go/registry"
 	"os"
+	//	"fmt"
 	"os/exec"
 	"strings"
 	//"time"
@@ -23,9 +24,37 @@ const (
 	hardwareID  = "c29f9ded-0d34-4e64-9ee5-c66d202081d6"
 )
 
-var SST = ""
-var SD = ""
-var UPDATEDSSTSD = false
+type SliceUpdatedValues struct {
+	Updatedsstsd bool
+	Sst int
+	Sd  string
+}
+
+var Slices SliceUpdatedValues
+
+func DefaultInit() {
+	sliceJson := `{"updatedsstsd":false, "sst":0,"sd":"0"}`
+	json.Unmarshal([]byte(sliceJson), &Slices)
+}
+
+type MmeStruct struct {
+	Types                         string
+	LogLevel                      string
+	Mcc                           string //int
+	Mnc                           string //int
+	Tac                           int
+	MmeGid                        int
+	MmeCode                       int
+	Lac                           int
+	MmeRelativeCapacity           int
+	NatEnabled                    bool
+	AmfDefaultSliceServiceType    int
+	AmfDefaultSliceDifferentiator string //int
+	AmfName                       string
+	AmfRegionId                   string //int
+	AmfSetId                      string //int
+	AmfPointer                    string //int
+}
 
 func Init() {
 	// Start GRPC server for Streamer service of Magma Orchestreator
@@ -35,13 +64,13 @@ func Init() {
 	logger.MagmaGwRegLog.Infoln("Get registered networks at Orchestrator")
 	RegisterOaiNetwork()
 	GenerateGatewayCerts()
+	DefaultInit()
 	//GetPlmn ()
 	//time.Sleep((2 * time.Second))
 	//StreamUpdates()
 }
 
 func RegisterOaiNetwork() {
-
 	url := BASE_URL + "networks"
 	status, data, _ := SendHttpRequest("GET", url, "")
 	if status != 200 {
@@ -59,22 +88,6 @@ func RegisterOaiNetwork() {
 			RegisterTier()
 			RegisterGateway()
 		}
-	}
-}
-
-func GetPlmn() {
-	gatewayID := "oaigw1"
-	networkID := "oai"
-
-	url := BASE_URL + "lte/" + networkID + "/gateways/" + gatewayID + "/cellular/ngc"
-	status, data, _ := SendHttpRequest("GET", url, "")
-	if status != 200 {
-		logger.MagmaGwRegLog.Infoln("HTTP request failed with code:", status)
-		logger.MagmaGwRegLog.Infoln("HTTP response body :", data)
-		return
-	} else {
-		data, _ = PrettyString([]byte(data))
-		logger.MagmaGwRegLog.Infoln("Plmn ngc details: \n", data)
 	}
 }
 
@@ -163,56 +176,39 @@ func GenerateGatewayCerts() {
 	logger.MagmaGwRegLog.Infoln("Gateway certificates generated sucessfully")
 }
 
-func Find(a []string, x string) (int, bool) {
-	for i, n := range a {
-		if strings.Contains(n, x) {
-			return i, true
-		}
-	}
-	return len(a), false
-}
-
 func StreamUpdates() {
 	logger.MagmaGwRegLog.Infoln("Streaming updates from Orcheatrator")
 
+	var mmes MmeStruct
+	
 	conn, _ := registry.Get().GetCloudConnection(ServiceName)
 	streamerClient := protos.NewStreamerClient(conn)
 
 	stream, _ := streamerClient.GetUpdates(context.Background(), &protos.StreamRequest{GatewayId: "c29f9ded-0d34-4e64-9ee5-c66d202081d6", StreamName: "configs"})
 	actualMarshaled, _ := stream.Recv()
-	// println(actualMarshaled.String())
 
 	cfg := &protos.GatewayConfigs{}
 	protos.UnmarshalMconfig(actualMarshaled.Updates[0].GetValue(), cfg)
 
 	newCfg := &rawMconfigMsg{ConfigsByKey: map[string]json.RawMessage{}}
 	json.Unmarshal(actualMarshaled.Updates[0].GetValue(), newCfg)
-	data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
-	logger.MagmaGwRegLog.Infoln("\n", data)
 
-	newdata := []string(strings.Split(data, ","))
-
-	sstPosition, foundsst := Find(newdata, "amfDefaultSliceServiceType")
-	sdPosition, foundsd := Find(newdata, "amfDefaultSliceDifferentiator")
-	if foundsst && foundsd {
-		amfDefaultSliceServiceType := []string(strings.Split(newdata[sstPosition], ": "))
-		//amfDefaultSliceDifferentiator := []string(strings.Split(newdata[sdPosition], ": "))
-		amfDefaultSliceDifferentiator := []string(strings.Split([]string(strings.Split(newdata[sdPosition], ": "))[1], "\""))
-
-		if (!strings.EqualFold(SST, amfDefaultSliceServiceType[1])) || (!strings.EqualFold(SD, amfDefaultSliceDifferentiator[1])) {
-			SST = amfDefaultSliceServiceType[1]
-			SD = amfDefaultSliceDifferentiator[1]
-			UPDATEDSSTSD = true
-		} else {
-			UPDATEDSSTSD = false
-		}
-
-		if UPDATEDSSTSD {
-			logger.MagmaGwRegLog.Infoln("PLMN values have been updated \n")
-			logger.MagmaGwRegLog.Infoln("New SST value:", SST)
-			logger.MagmaGwRegLog.Infoln("New SD value:", SD)
-		}
+	err := json.Unmarshal([]byte(string(newCfg.ConfigsByKey["mme"])), &mmes)
+	if err != nil {
+		panic(err)
+	}
+	
+	if (!(Slices.Sst == mmes.AmfDefaultSliceServiceType)) || (!strings.EqualFold(Slices.Sd, mmes.AmfDefaultSliceDifferentiator)) {
+		Slices.Sst = mmes.AmfDefaultSliceServiceType
+		Slices.Sd = mmes.AmfDefaultSliceDifferentiator
+		Slices.Updatedsstsd = true
+	} else {
+		Slices.Updatedsstsd = false
 	}
 
-	logger.MagmaGwRegLog.Infoln("Streaming updates from Orcheatrator [StreamInterval : 5]")
+	if Slices.Updatedsstsd {
+		logger.MagmaGwRegLog.Infoln("PLMN values have been updated on the Orchestrator side \n")
+		logger.MagmaGwRegLog.Infoln("The new Slice Service Type (sst) value =", Slices.Sst)
+		logger.MagmaGwRegLog.Infoln("The new Slice Differentiator (sd) value =", Slices.Sd)
+	}
 }
