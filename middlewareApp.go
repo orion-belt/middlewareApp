@@ -7,12 +7,13 @@ import (
 	"middlewareApp/oaisbi"
 	"os"
 	"time"
+	"middlewareApp/config"
 )
-
 
 var UpdateAllSlice_Lists = true
 var PlmnPos = 0
 var SlicePos = 1
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "Openairinterface middlewareApp"
@@ -39,16 +40,27 @@ func main() {
 
 func AppInit(c *cli.Context) error {
 
-	cfg := c.String("cfg")
+	// Load configuration
+	cfg := c.String("config")
 	if cfg == "" {
-		logger.AppLog.Warnln("No configuration file provided. Using default configuration file:")
+		base_path,_ := os.Getwd()
+		configPath := base_path+config.CONFIG_PATH 
+		logger.AppLog.Warnln("No configuration file provided. Using default configuration file:",configPath)
 		logger.AppLog.Infoln("Application Usage:", c.App.Usage)
+		cfg = base_path+config.CONFIG_PATH 
+	} 
+
+	if err := config.LoadConfig(cfg); err != nil {
+		logger.AppLog.Errorln("Failed to load config:", err)
+		return err
 	}
+	// Initialise middleware services
 	go magmanbi.Init()
 	for {
 		logger.AppLog.Infoln("\n\n")
 		time.Sleep((5 * time.Second))
-		go magmanbi.StreamUpdates()
+		go magmanbi.StreamConfigUpdates()
+		go magmanbi.StreamSubscriberUpdates()
 		if UpdateAllSlice_Lists {
 			go oaisbi.UpdateAmfPlmnForAllElements()
 		}else{

@@ -26,9 +26,14 @@ local_address: 172.18.0.9
 local_port: 8443
 
 # Cloud address for reaching out to the cloud.
-#cloud_address: 127.0.0.1
+# cloud_address: 172.18.0.4
+# cloud_address: controller.magma.test
+# cloud_port: 8443
+
+# cloud_address: 172.18.0.4
 cloud_address: controller.magma.test
-cloud_port: 7443
+cloud_port: 8443
+
 
 bootstrap_address: bootstrapper-controller.magma.test
 bootstrap_port: 7444

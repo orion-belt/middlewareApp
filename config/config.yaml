@@ -5,10 +5,34 @@ info:
 
 configuration:
   nbi:
-    - nbi1:
+    nbi1:
       name: magma 
-      grpcRemotePort: 9082
+      networkId: oai
+      gatewayId: oaigw1
+      generatehwId: false
+      hardwareId: c29f9ded-0d34-4e64-9ee5-c66d202081d6
+      cloudAddress: controller.magma.test
+      cloudStreamerPort: 8443
+      cloudHttpsPort: 9443
+      streamInterval: 5
+      registerGateway: no
+
   sbi:
-    - sbi1:
-      services:
-      - 
+    enableReporting: false
+    enableHttp2: false
+    services:
+      - name: oai-amf
+        address: 192.168.70.132
+        port: 80
+      - name: oai-smf
+        address: 192.168.70.133
+        port: 80
+      - name: oai-upf
+        address: 192.168.70.134
+        port: 80
+      - name: oai-udr
+        address: 192.168.70.136
+        port: 80
+        
+logger:
+  logLevel: info 

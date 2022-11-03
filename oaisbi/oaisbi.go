@@ -138,7 +138,7 @@ func GetPlmn() Amf_Configuration {
 		if err != nil {
 			panic(err)
 		}
-		logger.MagmaGwRegLog.Infoln("Unmarshal AMF : ", Amf, "\n")
+		//logger.MagmaGwRegLog.Infoln("Unmarshal AMF : ", Amf, "\n")
 		return Amf
 	}
 }

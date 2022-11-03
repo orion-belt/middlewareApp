@@ -10,6 +10,7 @@ var (
 	log *logrus.Logger
 
 	AppLog        *logrus.Entry
+	ConfigLog        *logrus.Entry
 	GrpcLog       *logrus.Entry
 	MagmaLog      *logrus.Entry
 	MagmaGwRegLog *logrus.Entry
@@ -27,6 +28,7 @@ func init() {
 	}
 
 	AppLog = log.WithFields(logrus.Fields{"category": "APPS"})
+	ConfigLog = log.WithFields(logrus.Fields{"category": "CONFIG"})
 	MagmaLog = log.WithFields(logrus.Fields{"category": "MAGM", "component": "GRPC"})
 	MagmaGwRegLog = log.WithFields(logrus.Fields{"category": "MAGM", "component": "HTTP"})
 }
