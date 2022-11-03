@@ -73,7 +73,7 @@ func GetCloudHttpUrl(service string) string {
 	return ""
 }
 
-func IsRegisterGateway(service string)bool{
+func IsRegisterGateway(service string) bool {
 	for _, nbi_tmp := range MwConfig.Configuration.Nbis {
 		if nbi_tmp.Name == service {
 			return nbi_tmp.RegisterGateway

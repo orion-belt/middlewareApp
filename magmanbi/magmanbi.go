@@ -46,19 +46,34 @@ func Init() {
 	logger.MagmaGwRegLog.Infoln("Get registered networks at Orchestrator")
 	if RegisterOaiNetwork() {
 		time.Sleep((2 * time.Second))
-		GenerateGatewayCerts()
-		// Start concurrent stream updates for config, subscriber etc.
-		go StreamConfigUpdates()
-		go StreamSubscriberUpdates()
+
+		for {
+			if IsNetworkReady(networkID) {
+				for {
+					if IsGatewayReady(gatewayID) {
+						// Start concurrent stream updates for config, subscriber etc.
+						logger.MagmaGwRegLog.Infoln("Generate gateway certs")
+						if GenerateGatewayCerts() {
+							go StreamConfigUpdates()
+							go StreamSubscriberUpdates()
+							select {} // Run these threads only
+						}
+					}
+					time.Sleep((2 * time.Second))
+				}
+			}
+			time.Sleep((2 * time.Second))
+		}
+
 	}
 }
 
 func RegisterOaiNetwork() bool {
-	if !config.IsRegisterGateway(nbi_service){
+	if !config.IsRegisterGateway(nbi_service) {
 		logger.MagmaGwRegLog.Infoln("Gateway registration disabled")
 		return true
 	}
-		
+
 	url := nbi_base_url + "networks"
 
 	status, data, _ := SendHttpRequest("GET", url, "")
@@ -172,6 +187,7 @@ func StreamConfigUpdates() {
 
 		newCfg := &rawMconfigMsg{ConfigsByKey: map[string]json.RawMessage{}}
 		json.Unmarshal(actualMarshaled.Updates[0].GetValue(), newCfg)
+
 		data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
 		logger.MagmaGwRegLog.Infoln("\n", data)
 		logger.MagmaGwRegLog.Infoln("Stareaming config updates from Orcheatrator [StreamInterval : ", stream_interval*time.Second, "]")
@@ -192,10 +208,9 @@ func StreamSubscriberUpdates() {
 		logger.MagmaGwRegLog.Infoln("Number of subscribes", num_sub)
 		for i := 0; i < num_sub; i++ {
 			logger.MagmaGwRegLog.Infoln("Subscriber ", actualMarshaled.Updates[i].Key, " information", (actualMarshaled.Updates[i].String()))
-
 		}
-		logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator [StreamInterval : ", (stream_interval+1)*time.Second, "]")
-		time.Sleep(((stream_interval + 1) * time.Second))
+		logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator [StreamInterval : ", (stream_interval)*time.Second, "]")
+		time.Sleep(((stream_interval) * time.Second))
 	}
 }
 
@@ -207,12 +222,37 @@ func PrettyString(str []byte) (string, error) {
 	return prettyJSON.String(), nil
 }
 
-func GenerateGatewayCerts() {
+func GenerateGatewayCerts() bool {
 	base_path, _ := os.Getwd()
 	_, err := exec.Command(base_path+"/magmanbi/scripts/generate_gateway_certs.sh", hardwareID).Output()
 	if err != nil {
-		logger.MagmaGwRegLog.Panicln(err)
-		return
+		logger.MagmaGwRegLog.Errorln("Certificate generation failed --> Verify if correct key type is used")
+		return false
 	}
 	logger.MagmaGwRegLog.Infoln("Gateway certificates generated sucessfully")
+	return true
+}
+
+func IsNetworkReady(NetworkID string) bool {
+	url := nbi_base_url + "lte"
+	_, data, _ := SendHttpRequest("GET", url, "")
+	if strings.Contains(string(data), NetworkID) {
+		logger.MagmaGwRegLog.Infoln("Network ready for stream")
+		return true
+	} else {
+		logger.MagmaGwRegLog.Warnln("Network not ready for stream")
+		return false
+	}
+}
+
+func IsGatewayReady(gatewayID string) bool {
+	url := nbi_base_url + "networks/" + networkID + "/gateways"
+	_, data, _ := SendHttpRequest("GET", url, "")
+	if strings.Contains(string(data), gatewayID) {
+		logger.MagmaGwRegLog.Infoln("Gateway ready for stream")
+		return true
+	} else {
+		logger.MagmaGwRegLog.Warnln("Gateway not ready for stream")
+		return false
+	}
 }

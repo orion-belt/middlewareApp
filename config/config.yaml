@@ -10,12 +10,12 @@ configuration:
       networkId: oai
       gatewayId: oaigw1
       generatehwId: false
-      hardwareId: c29f9ded-0d34-4e64-9ee5-c66d202081d6
+      hardwareId: 22ffea10-7fc4-4427-975a-b9e4ce8f6f4d
       cloudAddress: controller.magma.test
       cloudStreamerPort: 8443
       cloudHttpsPort: 9443
       streamInterval: 5
-      registerGateway: no
+      registerGateway: false
 
   sbi:
     enableReporting: false
