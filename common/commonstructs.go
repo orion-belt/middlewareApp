@@ -1,5 +1,20 @@
 package common
 
+// Generic Structs
+type SNSSAI struct {
+	Sst int
+	Sd  string
+}
+
+type PLMN struct {
+	Mcc string
+	Mnc string
+}
+
+const (
+	SST_VALUE_MAX = 255
+)
+// Common Magma Struct
 type MME struct {
 	Type                          string        `json:"@type,omitempty"`
 	AmfDefaultSliceDifferentiator string        `json:"amfDefaultSliceDifferentiator,omitempty"`

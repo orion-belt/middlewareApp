@@ -1,4 +1,5 @@
 package common
+
 import (
 	"io"
 	"io/ioutil"

@@ -132,3 +132,13 @@ func GetGatewayCerds() (string, string) {
 	clientKeyFile := base_path + "/magmanbi/.certs/gateway.key"
 	return clientCaFile, clientKeyFile
 }
+
+func GetOaiService (service string) string {
+	for _, sbi_tmp := range MwConfig.Configuration.Sbi.ServicesList {
+		if sbi_tmp.Name == service {
+			BASE_URL := "https://" + sbi_tmp.Address + ":" + strconv.Itoa(sbi_tmp.Port)
+			return BASE_URL
+		}
+	}
+	return ""
+}
