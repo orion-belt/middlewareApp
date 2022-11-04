@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"middlewareApp/config"
-	"middlewareApp/common"
 	"middlewareApp/apiconv"
+	"middlewareApp/common"
+	"middlewareApp/config"
 	"middlewareApp/logger"
 	"middlewareApp/magmanbi/orc8r/lib/go/protos"
 	"os"
@@ -186,16 +186,16 @@ func StreamConfigUpdates() {
 
 		newCfg := &rawMconfigMsg{ConfigsByKey: map[string]json.RawMessage{}}
 		json.Unmarshal(actualMarshaled.Updates[0].GetValue(), newCfg)
-		
+
 		data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
 		logger.MagmaGwRegLog.Infoln("\n", data)
-		
+
 		var mme common.MME
 		err := json.Unmarshal([]byte(string(newCfg.ConfigsByKey["mme"])), &mme)
 		if err != nil {
 			logger.MagmaGwRegLog.Errorln("Error parsing mme config -", err)
 		} else {
-			apiconv.CheckForUpdate(&mme)
+			apiconv.CheckForConfigUpdate(&mme)
 		}
 
 		logger.MagmaGwRegLog.Infoln("Stareaming config updates from Orcheatrator [StreamInterval : ", stream_interval*time.Second, "]")
@@ -216,6 +216,7 @@ func StreamSubscriberUpdates() {
 		logger.MagmaGwRegLog.Infoln("Number of subscribes", num_sub)
 		for index := 0; index < num_sub; index++ {
 			logger.MagmaGwRegLog.Infoln("Subscriber ", actualMarshaled.Updates[index].Key, " information", (actualMarshaled.Updates[index].String()))
+			apiconv.CheckForSubscriberUpdate(actualMarshaled.Updates[index].Key)
 		}
 		logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator [StreamInterval : ", (stream_interval)*time.Second, "]")
 		time.Sleep(((stream_interval) * time.Second))

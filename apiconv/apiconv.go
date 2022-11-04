@@ -6,6 +6,10 @@ import (
 	"middlewareApp/oaisbi"
 )
 
+//#######################################################################
+//#### Config Update ####################################################
+//#######################################################################
+
 var DefaultSnssaiInit bool
 var Snssai common.SNSSAI
 
@@ -47,7 +51,7 @@ func IsSnssaiUpdated(snssai_tmp common.SNSSAI) bool {
 	return true
 }
 
-func CheckForUpdate(mme *common.MME) {
+func CheckForConfigUpdate(mme *common.MME) {
 	var snssai_tmp common.SNSSAI
 	snssai_tmp.Sst = mme.AmfDefaultSliceServiceType
 	snssai_tmp.Sd = mme.AmfDefaultSliceDifferentiator
@@ -58,4 +62,13 @@ func CheckForUpdate(mme *common.MME) {
 		Snssai.Sd = mme.AmfDefaultSliceDifferentiator
 		oaisbi.UpdateSnssai(Snssai)
 	}
+}
+
+//#######################################################################
+//#### Subscriber Update ################################################
+//#######################################################################
+
+func CheckForSubscriberUpdate(imsi string){
+	oaisbi.UpdateSubscriber(imsi)
+
 }

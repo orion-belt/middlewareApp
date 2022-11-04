@@ -8,9 +8,13 @@ import (
 	"net/http"
 	"encoding/json"
 	"bytes"
+    "strings"
+
 	// "io/ioutil"
 )
-
+//#######################################################################
+//#### Config Update ####################################################
+//#######################################################################
 var SnssaiLocal common.SNSSAI
 
 func UpdateSnssai (Snssai common.SNSSAI) {
@@ -119,4 +123,45 @@ func DeleteSnssaiFromList (amf_cfg *OaiAamfConfig, Snssai common.SNSSAI){
 		amf_cfg.PlmnList[0].SliceList[del_index] = amf_cfg.PlmnList[0].SliceList[len(amf_cfg.PlmnList[0].SliceList)-1] // Copy last element to index i.
 		amf_cfg.PlmnList[0].SliceList = amf_cfg.PlmnList[0].SliceList[:len(amf_cfg.PlmnList[0].SliceList)-1] // Erase last element
 	}
+}
+
+//#######################################################################
+//#### Subscriber Update ################################################
+//#######################################################################
+
+func UpdateSubscriber(imsi string) {
+	imsi = strings.ReplaceAll(imsi, "IMSI", "")
+	base_url := config.GetOaiService("oai-udr")
+	url := base_url+"/nudr-dr/v1/subscription-data/"+imsi+"/authentication-data/authentication-subscription"
+	client := &http.Client{}
+
+	sub := CreateSubscriberProfile(imsi)
+	reqbody, _ := json.Marshal(sub)
+	req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(reqbody))
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+    logger.OaiSbiLog.Infoln("Subscriber updated successfully: ", resp.Body)
+}
+
+func CreateSubscriberProfile(imsi string) (Subscriber){
+	logger.OaiSbiLog.Infoln("Generating subscriber prifile for imsi -", imsi)
+	var Subscriber Subscriber
+	Subscriber.AuthenticationMethod = "5G_AKA"
+	Subscriber.EncPermanentKey = "0C0A34601D4F07677303652C0462535B"
+	Subscriber.ProtectionParameterID = "0C0A34601D4F07677303652C0462535B"
+	Subscriber.SequenceNumber.Sqn = "000000000020"
+	Subscriber.SequenceNumber.SqnScheme = "NON_TIME_BASED"
+	Subscriber.SequenceNumber.LastIndexes.Ausf= 0
+	Subscriber.AuthenticationManagementField = "8000"
+	Subscriber.AlgorithmID ="milenage"
+	Subscriber.EncOpcKey = "63bfa50ee6523365ff14c1f45f88737d"
+	Subscriber.EncTopcKey = "63bfa50ee6523365ff14c1f45f88737d"
+	Subscriber.VectorGenerationInHss = false
+	Subscriber.N5GcAuthMethod = ""
+	Subscriber.RgAuthenticationInd = false
+	Subscriber.Supi = imsi
+return Subscriber
 }

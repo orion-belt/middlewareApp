@@ -91,3 +91,25 @@ type Slice struct {
 	Sst int `json:"sst"`
 	Sd  int `json:"sd,omitempty"`
 }
+
+
+type Subscriber struct {
+	AuthenticationMethod  string `json:"authenticationMethod"`
+	EncPermanentKey       string `json:"encPermanentKey"`
+	ProtectionParameterID string `json:"protectionParameterId"`
+	SequenceNumber        struct {
+		Sqn         string `json:"sqn"`
+		SqnScheme   string `json:"sqnScheme"`
+		LastIndexes struct {
+			Ausf int `json:"ausf"`
+		} `json:"lastIndexes"`
+	} `json:"sequenceNumber"`
+	AuthenticationManagementField string `json:"authenticationManagementField"`
+	AlgorithmID                   string `json:"algorithmId"`
+	EncOpcKey                     string `json:"encOpcKey"`
+	EncTopcKey                    string `json:"encTopcKey"`
+	VectorGenerationInHss         bool   `json:"vectorGenerationInHss"`
+	N5GcAuthMethod                string `json:"n5gcAuthMethod"`
+	RgAuthenticationInd           bool   `json:"rgAuthenticationInd"`
+	Supi                          string `json:"supi"`
+}
