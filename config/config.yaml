@@ -15,7 +15,7 @@ configuration:
       cloudStreamerPort: 8443
       cloudHttpsPort: 9443
       streamInterval: 5
-      registerGateway: false
+      registerGateway: yes
 
   sbi:
     enableReporting: false

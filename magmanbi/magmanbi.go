@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"middlewareApp/config"
+	"middlewareApp/common"
+	"middlewareApp/apiconv"
 	"middlewareApp/logger"
 	"middlewareApp/magmanbi/orc8r/lib/go/protos"
 	"os"
@@ -174,6 +176,7 @@ func RegisterGateway() {
 
 func StreamConfigUpdates() {
 	logger.MagmaGwRegLog.Infoln("Stareaming updates from Orcheatrator")
+	var mme common.MME
 
 	conn, _ := GetCloudConnection(nbi_stream_authority, nbi_stream_url)
 	streamerClient := protos.NewStreamerClient(conn)
@@ -187,6 +190,12 @@ func StreamConfigUpdates() {
 
 		newCfg := &rawMconfigMsg{ConfigsByKey: map[string]json.RawMessage{}}
 		json.Unmarshal(actualMarshaled.Updates[0].GetValue(), newCfg)
+		err := json.Unmarshal([]byte(string(newCfg.ConfigsByKey["mme"])), &mme)
+		if err != nil {
+			logger.MagmaGwRegLog.Errorln("Error parsing mme config -", err)
+		} else {
+			apiconv.CheckForUpdate(&mme)
+		}
 
 		data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
 		logger.MagmaGwRegLog.Infoln("\n", data)
