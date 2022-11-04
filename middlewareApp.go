@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/urfave/cli"
 	"middlewareApp/config"
+	"middlewareApp/apiconv"
 	"middlewareApp/logger"
 	"middlewareApp/magmanbi"
 	"os"
@@ -51,6 +52,7 @@ func AppInit(c *cli.Context) error {
 
 	// Initialise middleware services
 	go magmanbi.Init()
+	go apiconv.Init()
 	select {} // block forever
 	// return nil
 }

@@ -176,7 +176,6 @@ func RegisterGateway() {
 
 func StreamConfigUpdates() {
 	logger.MagmaGwRegLog.Infoln("Stareaming updates from Orcheatrator")
-	var mme common.MME
 
 	conn, _ := GetCloudConnection(nbi_stream_authority, nbi_stream_url)
 	streamerClient := protos.NewStreamerClient(conn)
@@ -190,14 +189,15 @@ func StreamConfigUpdates() {
 		
 		data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
 		logger.MagmaGwRegLog.Infoln("\n", data)
-
+		
+		var mme common.MME
 		err := json.Unmarshal([]byte(string(newCfg.ConfigsByKey["mme"])), &mme)
 		if err != nil {
 			logger.MagmaGwRegLog.Errorln("Error parsing mme config -", err)
 		} else {
 			apiconv.CheckForUpdate(&mme)
 		}
-		
+
 		logger.MagmaGwRegLog.Infoln("Stareaming config updates from Orcheatrator [StreamInterval : ", stream_interval*time.Second, "]")
 		time.Sleep((stream_interval * time.Second))
 	}
