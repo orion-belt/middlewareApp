@@ -92,6 +92,9 @@ type Slice struct {
 	Sd  int `json:"sd,omitempty"`
 }
 
+type SubscriberList struct {
+	Subscribers []Subscriber
+}
 
 type Subscriber struct {
 	AuthenticationMethod  string `json:"authenticationMethod"`

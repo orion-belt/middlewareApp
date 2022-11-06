@@ -212,12 +212,7 @@ func StreamSubscriberUpdates() {
 	for {
 		stream, _ := streamerClient.GetUpdates(context.Background(), &protos.StreamRequest{GatewayId: hardwareID, StreamName: SubscriberStreamName, ExtraArgs: nil})
 		actualMarshaled, _ := stream.Recv()
-		num_sub := len(actualMarshaled.Updates)
-		logger.MagmaGwRegLog.Infoln("Number of subscribes", num_sub)
-		for index := 0; index < num_sub; index++ {
-			logger.MagmaGwRegLog.Infoln("Subscriber ", actualMarshaled.Updates[index].Key, " information", (actualMarshaled.Updates[index].String()))
-			apiconv.CheckForSubscriberUpdate(actualMarshaled.Updates[index].Key)
-		}
+		apiconv.CheckForSubscriberUpdate(actualMarshaled)
 		logger.MagmaGwRegLog.Infoln("Stareaming subscriber updates from Orcheatrator [StreamInterval : ", (stream_interval)*time.Second, "]")
 		time.Sleep(((stream_interval) * time.Second))
 	}
