@@ -72,7 +72,6 @@ func CheckForConfigUpdate(mme *common.MME) {
 //#### Subscriber Update ################################################
 //#######################################################################
 
-
 func CheckForSubscriberUpdate(actualMarshaled *protos.DataUpdateBatch) {
 	num_sub := len(actualMarshaled.Updates)
 	if !DefaultSubscriberInit {
@@ -98,7 +97,7 @@ func CheckForSubscriberUpdate(actualMarshaled *protos.DataUpdateBatch) {
 				del_index := 255
 
 				for _, sub := range SubscribersList {
-					if sub.Supi == subscriber.Supi{
+					if sub.Supi == subscriber.Supi {
 						del_index = index
 					}
 					index++

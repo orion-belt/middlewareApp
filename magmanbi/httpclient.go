@@ -3,9 +3,9 @@ package magmanbi
 import (
 	"crypto/tls"
 	"log"
+	"middlewareApp/common"
 	"net/http"
 	"os"
-	"middlewareApp/common"
 )
 
 func GetHttpClient() *http.Client {
@@ -35,6 +35,6 @@ func SendHttpRequest(method, url,
 	headers ...[]string,
 ) (int, string, error) {
 	var client = GetHttpClient()
-	response, contents, error :=common.SendHttpRequest(method, url, payload, client, headers ...,)
+	response, contents, error := common.SendHttpRequest(method, url, payload, client, headers...)
 	return response, string(contents), error
 }

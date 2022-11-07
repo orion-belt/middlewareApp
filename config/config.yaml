@@ -14,7 +14,7 @@ configuration:
       cloudAddress: controller.magma.test
       cloudStreamerPort: 8443
       cloudHttpsPort: 9443
-      streamInterval: 5
+      streamInterval: 1
       registerGateway: no
 
   sbi:

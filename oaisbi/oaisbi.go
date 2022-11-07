@@ -247,7 +247,7 @@ func RemoveSubscriberFromList(subscriberlist *[]Subscriber, subscriber Subscribe
 	var subscriberlisttmp []Subscriber
 	subscriberlisttmp = *subscriberlist
 	for _, sub := range subscriberlisttmp {
-		if sub.Supi == subscriber.Supi{
+		if sub.Supi == subscriber.Supi {
 			del_index = index
 		}
 		index++
@@ -256,5 +256,5 @@ func RemoveSubscriberFromList(subscriberlist *[]Subscriber, subscriber Subscribe
 		subscriberlisttmp[del_index] = subscriberlisttmp[len(subscriberlisttmp)-1] // Copy last element to index i.
 		subscriberlisttmp = subscriberlisttmp[:len(subscriberlisttmp)-1]           // Erase last element
 	}
-	println("New length",len(subscriberlisttmp))
+	println("New length", len(subscriberlisttmp))
 }

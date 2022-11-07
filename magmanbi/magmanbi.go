@@ -58,6 +58,7 @@ func Init() {
 						if GenerateGatewayCerts() {
 							go StreamConfigUpdates()
 							go StreamSubscriberUpdates()
+							go StreamApnUpdates()
 							select {} // Run these threads only
 						}
 					}
@@ -218,11 +219,21 @@ func StreamSubscriberUpdates() {
 	}
 }
 
+func StreamApnUpdates() {
+	for {
+		url := nbi_base_url + "lte/" + networkID + "/apns"
+		_, data, _ := SendHttpRequest("GET", url, "")
+		data, _ = PrettyString([]byte(data))
+		logger.MagmaGwRegLog.Infoln("APN details: \n", data)
+	}
+}
+
 func PrettyString(str []byte) (string, error) {
 	var prettyJSON bytes.Buffer
 	if err := json.Indent(&prettyJSON, str, "", "  "); err != nil {
 		return "", err
 	}
+	time.Sleep(((stream_interval) * time.Second))
 	return prettyJSON.String(), nil
 }
 
