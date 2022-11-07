@@ -9,7 +9,7 @@ import (
 	"middlewareApp/magmanbi/orc8r/lib/go/protos"
 	"net/http"
 	"strconv"
-	// "strings"
+	"strings"
 	// "io/ioutil"
 )
 
@@ -130,7 +130,7 @@ func DeleteSnssaiFromList(amf_cfg *OaiAamfConfig, Snssai common.SNSSAI) {
 //#### Subscriber Update ################################################
 //#######################################################################
 func UpdateSubscriber(imsi string, sub Subscriber) {
-	// imsi = strings.ReplaceAll(imsi, "IMSI", "")
+	imsi = strings.ReplaceAll(imsi, "IMSI", "")
 	base_url := config.GetOaiService("oai-udr")
 	url := base_url + "/nudr-dr/v1/subscription-data/" + imsi + "/authentication-data/authentication-subscription"
 	client := &http.Client{}
@@ -165,6 +165,7 @@ func UpdateSubscriber(imsi string, sub Subscriber) {
 
 func CreateSubscriberProfile(imsi string) Subscriber {
 	logger.OaiSbiLog.Infoln("Generating subscriber prifile for imsi -", imsi)
+	imsi = strings.ReplaceAll(imsi, "IMSI", "")
 	var Subscriber Subscriber
 	Subscriber.AuthenticationMethod = "5G_AKA"
 	Subscriber.EncPermanentKey = "0C0A34601D4F07677303652C0462535B"
