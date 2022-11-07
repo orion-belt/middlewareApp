@@ -1,0 +1,20 @@
+version: '3.8'
+services:
+  my5grantester:
+    image: middlewareapp:latest
+    container_name: middlewareApp
+    entrypoint: /bin/bash -c /middlewareApp/bin/middlewareApp
+    volumes:
+       - ./config/config.yaml:/middlewareApp/bin/config.yaml
+    networks:
+      public_net:
+      public_net_orc8r:
+networks:
+    public_net:
+        external:
+            name: demo-oai-public-net
+    public_net_orc8r:
+        external:
+            name: orc8r_default
+
+

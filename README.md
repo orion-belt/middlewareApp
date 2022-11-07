@@ -6,14 +6,14 @@ Middleware application for Orchestration OAI 5G Core Network
   * [Build and run Magma Orchestrator](https://docs.magmacore.org/docs/next/basics/quick_start_guide#terminal-tab-2-build-orchestrator)
   * [Build and run Magma Magma NMS](https://docs.magmacore.org/docs/next/basics/quick_start_guide#using-the-nms-ui)
   * [Deploy OAI 5G Core Network](https://gitlab.eurecom.fr/oai/cn5g/oai-cn5g-fed/-/blob/master/docs/DEPLOY_HOME.md)
-  * Install Go and other dependencies for middlewareApp1
+  * Install Go and other dependencies for middlewareApp
 
  ```bash
  wget https://artifactory.magmacore.org/artifactory/generic/go1.18.3.linux-amd64.tar.gz
  sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.18.3.linux-amd64.tar.gz
  export PATH=$PATH:/usr/local/go/bin
  go install github.com/fullstorydev/grpcurl/cmd/grpcurl@latest
- sudo apt install jq
+ sudo apt install jq -y
  ```
 
 * Build
@@ -38,4 +38,8 @@ cp $MAGMA_ROOT/.cache/test_certs/admin_operator.* middlewareApp/magmanbi/.certs/
 * Build docker image and run middlewareApp as docker container [OPTIONAL]
 ```bash
 docker build --target middlewareApp --tag middlewareapp:latest .
+```
+
+```bash
+docker-compose up
 ```

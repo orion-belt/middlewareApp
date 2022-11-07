@@ -32,6 +32,7 @@ echo "CERT_DIR :- "$CERT_DIR
 [[ ${hwid} == "" ]] && usage
 bootstrapper_location=${2:-localhost:7444}
 
+echo "bootstrapper_location= "$bootstrapper_location
 # ${MAGMA_ROOT:-~/magma}/orc8r/tools/scripts/consolidate_protos.bash
 
 # protoc \
