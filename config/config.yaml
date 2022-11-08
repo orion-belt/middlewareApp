@@ -11,6 +11,7 @@ configuration:
       gatewayId: oaigw1
       generatehwId: false
       hardwareId: 22ffea10-7fc4-4427-975a-b9e4ce8f6f4d
+      #challengeKey: MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE+Lckvw/eeV8CemEOWpX30/5XhTHKx/mm6T9MpQWuIM8sOKforNm5UPbZrdOTPEBAtGwJB6Uk9crjCIveFe+sN0zw705L94Giza4ny/6ASBcctCm2JJxFccVsocJIraSC
       cloudAddress: controller.magma.test
       cloudStreamerPort: 8443
       cloudHttpsPort: 9443

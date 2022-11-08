@@ -189,7 +189,7 @@ func StreamConfigUpdates() {
 		json.Unmarshal(actualMarshaled.Updates[0].GetValue(), newCfg)
 
 		data, _ := PrettyString([]byte(string(newCfg.ConfigsByKey["mme"])))
-		logger.MagmaGwRegLog.Infoln("\n", data)
+		logger.MagmaGwRegLog.Debugln("\n", data)
 
 		var mme common.MME
 		err := json.Unmarshal([]byte(string(newCfg.ConfigsByKey["mme"])), &mme)
@@ -224,7 +224,7 @@ func StreamApnUpdates() {
 		url := nbi_base_url + "lte/" + networkID + "/apns"
 		_, data, _ := SendHttpRequest("GET", url, "")
 		data, _ = PrettyString([]byte(data))
-		logger.MagmaGwRegLog.Infoln("APN details: \n", data)
+		logger.MagmaGwRegLog.Debugln("APN details: \n", data)
 	}
 }
 
